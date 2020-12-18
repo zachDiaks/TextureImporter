@@ -35,3 +35,6 @@ Design Choices
 			a) Pop-up dialogue
 			b) GUI that's always up and displays the status
 			c) Something with instructions??
+
+	- When extracting, create my own folder in whatever directory is specified.
+		Remove this directory when finished
