@@ -12,7 +12,8 @@ NOTES:
         c) Select files/folders to import from
 
 TODO:
-    - Cache gcr and melee in constructor
+    - Figure out how to make certain things bold
+    - Add instructions tab (will require a restructuring)
     - Backup button and implementation
     - Stages
     - No ZIP file implementation?
@@ -35,21 +36,31 @@ class textureImporter:
         self.isValidISO = False
         self.isValidGCR = False
         self.noDuplicates = True
+        self.firstTime = True
         self.gcrPath = ''
         self.meleePath = ''
         self.tempPath = os.getcwd() + "/tempDir"
         self.fileList = []
         self.window = tk.Tk()
         self.window.title("Texture Importer")
-        self.window.geometry("500x500")
+        self.window.geometry("450x500")
 
+        self.meleePathVar = tk.StringVar()
+        self.gcrPathVar = tk.StringVar()
         self.status = tk.StringVar()
         self.staticStatus = tk.StringVar()
+        self.meleePathVar.set("Melee Path: ")
+        self.gcrPathVar.set("GCR Path: ")
         self.staticStatus.set("Current Status:")
         self.staticStatusLabel = tk.Label(self.window,
-            textvariable=self.staticStatus,justify="left")
-        self.instructionLabel = tk.Label(self.window,
+            textvariable=self.staticStatus,justify="left",
+            font = ('bold'))
+        self.statusLabel = tk.Label(self.window,
             textvariable=self.status,justify="left",wraplength=300)
+        self.meleePathLabel = tk.Label(self.window,
+            textvariable=self.meleePathVar,justify="left")
+        self.GCRPathLabel = tk.Label(self.window,
+            textvariable=self.gcrPathVar,justify="left")
 
         self.gcrButton = tk.Button(text="Select GCR",command=self.getGCR)
         self.gcrButton.grid(row=1,column=1,ipadx=10,ipady=10)
@@ -63,16 +74,44 @@ class textureImporter:
 
         self.importButton = tk.Button(text="Import files",
             command=self.importFiles)
-        self.importButton.grid(row=2,column=2,ipadx=10,ipady=10)
-        self.staticStatusLabel.grid(row=3,column=1,columnspan=3,pady=20)
-        self.instructionLabel.grid(row=4,column=1,columnspan=3)
+        self.importButton.grid(row=2,column=2,ipadx=10,ipady=10,pady=10)
+        self.meleePathLabel.grid(row=3,column=1,columnspan=3,pady=10)
+        self.GCRPathLabel.grid(row=4,column=1,columnspan=3)
+        self.staticStatusLabel.grid(row=5,column=1,columnspan=3)
+        self.statusLabel.grid(row=6,column=1,columnspan=3)
 
+        # Check if GCR and Melee paths have already been set
+        self.thisPath = os.getcwd()
+        if os.path.exists(self.thisPath + '/paths.txt'):
+            self.firstTime = False
+            self.specifyPaths()
 
+    # Specify the melee and GCR paths if they've already been specified
+    def specifyPaths(self):
+        with open(self.thisPath + '/paths.txt','r') as f:
+            lines = f.readlines()
+            for line in lines:
+                tmp = line.split(" ")
+                if tmp[0] == "GCR":
+                    self.gcrPath = tmp[1]
+                    self.gcrPathVar.set(self.gcrPathVar.get() + tmp[1])
+                elif tmp[0] == "Melee":
+                    self.meleePath = tmp[1]
+                    self.meleePathVar.set(self.meleePathVar.get() + tmp[1])
+                else:
+                    self.status.set("Unknown GCR or Melee Path. Please reset this")
     # Get the GCR path
     def getGCR(self):
         self.gcrPath = askopenfilename()
         if (self.gcrPath.split("/")[-1] == "gcr.exe"):
             self.isValidGCR = True
+            self.gcrPathVar.set(self.gcrPathVar.get() + self.gcrPath)
+            if self.firstTime:
+                with open(self.thisPath + '/paths.txt','a') as f:
+                    f.write("GCR " + self.gcrPath + "\n")
+        elif self.gcrPath == "":
+            # Do nothing, gcr has not been set
+            self.status.set("")
         else:
             self.status.set("The file you selected is not named gcr.exe " +
                 "be sure to select the right file!")
@@ -82,6 +121,13 @@ class textureImporter:
         self.meleePath = askopenfilename()
         if (self.meleePath.split("/")[-1][-4:] == ".iso"):
             self.isValidISO = True
+            self.meleePathVar.set(self.meleePathVar.get() + self.meleePath)
+            if self.firstTime:
+                with open(self.thisPath + '/paths.txt','a') as f:
+                    f.write("Melee " + self.meleePath + "\n")
+        elif self.meleePath == "":
+            # Do nothing because file was not actually selected
+            self.status.set("")
         else:
             self.status.set("The file you selected is not an ISO. Please select a " +
                 "Melee ISO")
@@ -89,6 +135,8 @@ class textureImporter:
     # Get the files to add to
     def getFiles(self):
         self.fileList = askopenfilenames()
+        if len(self.fileList) == 0:
+            self.status.set("No files selected for import")
 
     # Determine if this is a zip file
     def isZIP(self,fName):
@@ -120,17 +168,19 @@ class textureImporter:
             self.status.set("Cannot import textures because either the GCR path, ISO path, or the files selected are invalid" +
             " or haven't been set yet or there are duplicate files that you're trying to import")
             return
-        backupPath = "/".join(self.meleePath.split("/")[:-1]) + "/TextureBackups"
-        if not os.path.exists(backupPath):
-            os.mkdir(backupPath)
+        self.backupPath = "/".join(self.meleePath.split("/")[:-1]) + "/TextureBackups"
+        if not os.path.exists(self.backupPath):
+            os.mkdir(self.backupPath)
 
         files = os.listdir(self.tempPath)
         for file in files:
             nodePath = "root/" + file
             textureImportPath = self.tempPath + "/" + file
-            textureBackupPath = backupPath + "/" + file
-            backupCallStr = "%s %s %s e %s"%(self.gcrPath,self.meleePath,nodePath,textureBackupPath)
-            importCallStr = "%s %s %s i %s"%(self.gcrPath,self.meleePath,nodePath,textureImportPath)
+            textureBackupPath = self.backupPath + "/" + file
+            backupCallStr = "%s %s %s e %s"%(self.gcrPath,self.meleePath,
+                nodePath,textureBackupPath)
+            importCallStr = "%s %s %s i %s"%(self.gcrPath,self.meleePath,
+                nodePath,textureImportPath)
             subprocess.call(backupCallStr,shell=True)
             subprocess.call(importCallStr,shell=True)
 
