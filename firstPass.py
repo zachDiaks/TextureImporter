@@ -14,10 +14,8 @@ NOTES:
 TODO:
     - Cache gcr and melee in constructor
     - Backup button and implementation
-    - Status display
     - Stages
     - No ZIP file implementation?
-    - PUSH TO GIT
     - Compile into executable! Then, the testing begins...
 '''
 from tkinter.filedialog import askopenfilename
@@ -42,12 +40,16 @@ class textureImporter:
         self.tempPath = os.getcwd() + "/tempDir"
         self.fileList = []
         self.window = tk.Tk()
+        self.window.title("Texture Importer")
         self.window.geometry("500x500")
 
-        self.instructions = tk.StringVar()
-        self.instructions.set("Instructions")
+        self.status = tk.StringVar()
+        self.staticStatus = tk.StringVar()
+        self.staticStatus.set("Current Status:")
+        self.staticStatusLabel = tk.Label(self.window,
+            textvariable=self.staticStatus,justify="left")
         self.instructionLabel = tk.Label(self.window,
-            textvariable=self.instructions)
+            textvariable=self.status,justify="left",wraplength=300)
 
         self.gcrButton = tk.Button(text="Select GCR",command=self.getGCR)
         self.gcrButton.grid(row=1,column=1,ipadx=10,ipady=10)
@@ -62,7 +64,8 @@ class textureImporter:
         self.importButton = tk.Button(text="Import files",
             command=self.importFiles)
         self.importButton.grid(row=2,column=2,ipadx=10,ipady=10)
-        self.instructionLabel.grid(row=3,column=2)
+        self.staticStatusLabel.grid(row=3,column=1,columnspan=3,pady=20)
+        self.instructionLabel.grid(row=4,column=1,columnspan=3)
 
 
     # Get the GCR path
@@ -71,7 +74,7 @@ class textureImporter:
         if (self.gcrPath.split("/")[-1] == "gcr.exe"):
             self.isValidGCR = True
         else:
-            print("The file you selected is not named gcr.exe " +
+            self.status.set("The file you selected is not named gcr.exe " +
                 "be sure to select the right file!")
 
     # Get the ISO path
@@ -80,7 +83,7 @@ class textureImporter:
         if (self.meleePath.split("/")[-1][-4:] == ".iso"):
             self.isValidISO = True
         else:
-            print("The file you selected is not an ISO. Please select a " +
+            self.status.set("The file you selected is not an ISO. Please select a " +
                 "Melee ISO")
 
     # Get the files to add to
@@ -95,18 +98,18 @@ class textureImporter:
     def hasDuplicateFile(self,fileList):
         dups = [item for item in os.listdir(self.tempPath) if item in fileList]
         if len(dups) > 0:
-            print("Found duplicate file(s):")
-            print(dups)
+            self.status.set("Found duplicate file(s):")
+            self.status.set(dups)
         return len(dups) > 0
 
     # Extract the files
     def extractFiles(self,file):
         with unzipper(file,'r') as f:
             if not self.hasDuplicateFile(f.namelist()):
-                print("Extracting " + file)
+                self.status.set("Extracting " + file)
                 f.extractall(self.tempPath)
             else:
-                print(file + " contains a texture file that exists in another zip file that you've chosen. " +
+                self.status.set(file + " contains a texture file that exists in another zip file that you've chosen. " +
                     "please choose only the file that you want to import.")
                 self.noDuplicates = False
         f.close()
@@ -114,7 +117,7 @@ class textureImporter:
     # Import the files in this
     def importToISO(self):
         if not (self.isValidGCR and self.isValidISO and self.noDuplicates):
-            print("Cannot import textures because either the GCR path, ISO path, or the files selected are invalid" +
+            self.status.set("Cannot import textures because either the GCR path, ISO path, or the files selected are invalid" +
             " or haven't been set yet or there are duplicate files that you're trying to import")
             return
         backupPath = "/".join(self.meleePath.split("/")[:-1]) + "/TextureBackups"
