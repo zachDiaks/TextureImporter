@@ -38,3 +38,11 @@ Design Choices
 
 	- When extracting, create my own folder in whatever directory is specified.
 		Remove this directory when finished
+
+
+------------------------------------ KIVY -----------------------------------
+- Using kivy as the main renderer
+- Steps:
+	1. Design it
+	2. Implement the design in a kivy file
+	4. Implement the textureImporter file as a kivy application

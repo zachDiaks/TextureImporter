@@ -12,10 +12,9 @@ NOTES:
         c) Select files/folders to import from
 
 TODO:
-    - Figure out how to make certain things bold
-    - Add instructions tab (will require a restructuring)
+    - Redesign
+    - Refactor for kivy
     - Backup button and implementation
-    - Stages
     - No ZIP file implementation?
     - Compile into executable! Then, the testing begins...
 '''

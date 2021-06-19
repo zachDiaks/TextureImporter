@@ -1,0 +1,46 @@
+#:kivy 1.0
+
+<Tab>:
+
+    do_default_tab: False
+
+    # Main Tab
+	TabbedPanelItem:
+        text: "Import to ISO"
+        GridLayout:
+            cols: 4
+            Button:
+                id: "isoButton"
+                text: "Select Melee ISO"
+                on_press: root.setPaths("Melee","iso")
+            Button:
+                id: "gcrButton"
+                text: "Select gcr Installation"
+                on_press: root.setPaths("gcr","exe")
+            Button:
+                id: "fileButton"
+                text: "Select files to import"
+                on_press: root.getFiles()
+            Button:
+                id: "importButton"
+                text: "Import files"
+                on_press: root.importFiles()
+            Label:
+                id: "isoLabel"
+                text: root.isoPath
+            Label:
+                id: "gcrLabel"
+                text: root.gcrPath
+            Label:
+                id: "fileLabel"
+                text: root.fileList
+            Label:
+                id: "statusLabel"
+                text: root.status
+
+    # Instructions tab
+	TabbedPanelItem:
+        text: "Instructions"
+        Label:
+            id: "instructionsLabel"
+            text: root.instructionsText
