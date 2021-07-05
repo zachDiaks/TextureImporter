@@ -1,5 +1,5 @@
-Throw backed up folders into a ZIP file
-Write instructions
-Re-arrange layout and buttons
 Handle incorrect naming
+    - What are all of the types of textures?
 Implement setPaths using a map
+Write instructions
+Create helpful readme

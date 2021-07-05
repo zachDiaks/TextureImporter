@@ -25,18 +25,53 @@
                 id: "importButton"
                 text: "Import files"
                 on_press: root.importFiles()
-            Label:
-                id: "isoLabel"
-                text: root.isoPath
-            Label:
-                id: "gcrLabel"
-                text: root.gcrPath
-            Label:
-                id: "fileLabel"
-                text: root.fileList
-            Label:
-                id: "statusLabel"
-                text: root.status
+            ScrollView:
+                do_scroll_x: False
+                do_scroll_y: True
+                Label:
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    text_size: self.width, None
+                    padding: 10, 10
+                    id: "isoLabel"
+                    text: root.isoPath
+                    text_size: self.width, None
+
+            ScrollView:
+                do_scroll_x: False
+                do_scroll_y: True
+                Label:
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    text_size: self.width, None
+                    padding: 10, 10
+                    id: "gcrLabel"
+                    text: root.gcrPath
+                    text_size: self.width, None
+
+            ScrollView:  
+                do_scroll_x: False
+                do_scroll_y: True  
+                Label:
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    text_size: self.width, None
+                    padding: 10, 10           
+                    id: "fileLabel"
+                    text: root.fileList
+                    text_size: self.width, None
+
+            ScrollView:
+                do_scroll_x: False
+                do_scroll_y: True
+                Label:
+                    size_hint_y: None
+                    height: self.texture_size[1]
+                    text_size: self.width, None
+                    padding: 10, 10
+                    id: "statusLabel"
+                    text: root.status
+                    text_size: self.width, None
 
     # Instructions tab
 	TabbedPanelItem:

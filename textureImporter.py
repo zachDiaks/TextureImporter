@@ -5,10 +5,11 @@ from kivy.properties import StringProperty
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
 from tkinter.filedialog import askopenfilenames
-from zipfile import ZipFile as unzipper, is_zipfile
+from zipfile import ZipFile as zipper, is_zipfile
 import subprocess
 import shutil
 import os
+import datetime
 
 Builder.load_file("tabImpl.kv")
 
@@ -200,7 +201,7 @@ class Tab(TabbedPanel):
         if not os.path.isdir("backup"):
             os.mkdir("backup")
 
-        with unzipper(fName,'r') as f:
+        with zipper(fName,'r') as f:
             self.status += "Extracting files\n"
             f.extractall("temp")
         
@@ -211,6 +212,8 @@ class Tab(TabbedPanel):
             # Validate the texture extension
             if texture[-3:] != "dat":
                 self.status += "File doesn't have .dat extension. Skipping this file.\n"
+            if not self.isValidDatFile(texture):
+                self.resolveName(texture)
             else:
                 # This is where the magic happens!
                 # Build call string and call gcr
@@ -226,6 +229,9 @@ class Tab(TabbedPanel):
                     subprocess.call(backupCallStr,shell=False)
                     subprocess.call(importCallStr,shell=False)
                     self.status += "Import success! \n"
+                    self.status += "Backing up old textures to ZIP file...\n"
+                    self.zipBackupFiles()
+                    self.status += "Backup success!\n"
                 except Exception as e:
                     self.status += e + "\n"
                     self.status += "Unknown import error.\n"
@@ -233,6 +239,46 @@ class Tab(TabbedPanel):
         # Remove temporary folder to avoid unnecessary imports
         shutil.rmtree("temp")
         return returnVal
+
+    '''
+    Helper function to throw all of the backed up files into a ZIP folder that can be re-imported at a later date. 
+    Essentially, just find any file that's not a ZIP and ZIP them using the current date and time.
+    '''
+    def zipBackupFiles(self):
+        allFiles = os.listdir("backup")
+        exportedFiles = [file for file in allFiles if file[-4:] != ".zip"]
+        thisTime = datetime.datetime.now()
+        fileName = "backup/backup_" +  str(thisTime.year) + str(thisTime.month) + str(thisTime.day) + "_" + str(thisTime.hour) + str(thisTime.minute) + str(thisTime.second) + ".zip"
+        zipObj = zipper(fileName,'w')
+        for file in exportedFiles:
+            zipObj.write("backup/" + file)
+            os.remove("backup/" + file)            
+        zipObj.close()
+
+    '''
+    Helper function to allow the user to re-name their texture so that it has the name corresponding to the texture they're trying to import. 
+    GCR requires the texture name to match the default name in the Melee ISO. 
+    Example:
+        - User downloads textures.ZIP which contains:
+            - PlFxNr.dat --> This is the expected name for the default Fox texture. 
+            - MySickRedFox.dat --> This name doesn't match the corresponding Melee ISO name for Red Fox. It needs to br 
+                                   re-named to PlFxOr.dat 
+    Implementation:
+        - Open a new UI that's layed out as:
+            Prompt to explain what's going on with the original file name
+            Drop-down to identify what texture type they're trying to change...
+                - Stage?
+                - Character? 
+                - Something else? Not sure what other textures there are...
+            Drop-down for the character/stage
+            Drop-down for the variant (red,blue,normal,etc.)
+        - Look up the                                  
+    '''
+    def resolveName(self,textureName):
+        pass
+
+    def isValidDatFile(self,textureName):
+        return True
         
 class TextureImporter(App):
     def build(self):
