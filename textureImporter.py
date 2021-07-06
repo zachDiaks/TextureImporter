@@ -195,6 +195,7 @@ class Tab(TabbedPanel):
         returnVal = 0
         # Create a temporary folder to extract files
         if not os.path.isdir("temp"):
+            self.status += "making temp folder \n"
             os.mkdir("temp")
         
         # Create a backup folder for the textures you're replacing
@@ -220,10 +221,18 @@ class Tab(TabbedPanel):
                 nodePath = "root/" + texture
                 textureImportPath = "temp/" + texture
                 textureBackupPath = "backup/" + texture
+            
                 backupCallStr = "%s %s %s e %s"%(self.gcrPath,self.isoPath,
                     nodePath,textureBackupPath)
                 importCallStr = "%s %s %s i %s"%(self.gcrPath,self.isoPath,
                     nodePath,textureImportPath)
+
+                # Remove any newline chars
+                backupFix = backupCallStr.split("\n") 
+                backupCallStr = "".join(backupFix)
+                importFix = importCallStr.split("\n")  
+                importCallStr = "".join(importFix)
+
                 try:
                     self.status += "Trying to import texture... \n"
                     subprocess.call(backupCallStr,shell=False)
@@ -233,7 +242,7 @@ class Tab(TabbedPanel):
                     self.zipBackupFiles()
                     self.status += "Backup success!\n"
                 except Exception as e:
-                    self.status += e + "\n"
+                    self.status += e.__str__() + "\n"
                     self.status += "Unknown import error.\n"
                     returnVal = -1
         # Remove temporary folder to avoid unnecessary imports

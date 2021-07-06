@@ -1,0 +1,3 @@
+C:/Users/zachr/OneDrive/Desktop/Dolphin/Games/gcr.exe
+ C:/Users/zachr/OneDrive/Desktop/Dolphin/Games/Melee.iso
+ root/PlFxOr.dat e backup/PlFxOr.dat
