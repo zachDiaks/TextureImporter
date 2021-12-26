@@ -1,7 +1,11 @@
 Edge case: There's a subfolder. Need to traverse till you find the dat files
     - Also shouldn't try importing if no dat files were found
+Better indication that you pressed the import button
+Ability to export logs
+Mega upgrade:
+    - Embed Melee textures in the app
 Handle incorrect naming
     - What are all of the types of textures?
+    - I found a website for this!
 Implement setPaths using a map
-Write instructions
-Create helpful readme
+Readme and instructions
