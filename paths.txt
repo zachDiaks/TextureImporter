@@ -1,2 +1,2 @@
-Melee C:/Users/zachr/OneDrive/Desktop/Dolphin/Games/Melee.iso
-gcr C:/Users/zachr/OneDrive/Desktop/Dolphin/Games/gcr.exe
+Melee C:/Users/zachr/Desktop/Main/Dolphin/Games/Melee.iso
+gcr C:/Users/zachr/Desktop/Main/gcr.exe
