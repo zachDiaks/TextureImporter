@@ -1,7 +1,14 @@
 from kivy.app import App
+from kivy.core.text import Label
 from kivy.lang import Builder
+from kivy.uix.popup import Popup
+from kivy.uix.button import Button
 from kivy.uix.tabbedpanel import TabbedPanel
+from kivy.uix.tabbedpanel import TabbedPanelItem
+from kivy.uix.floatlayout import FloatLayout
 from kivy.properties import StringProperty
+from kivy.uix.dropdown import DropDown
+from kivy.uix.popup import Popup
 import tkinter as tk
 from tkinter.filedialog import askopenfilename
 from tkinter.filedialog import askopenfilenames
@@ -35,6 +42,7 @@ class Tab(TabbedPanel):
         self.isValidgcr = False
         self.firstTime = True
         self.thisPath = os.getcwd()
+        self.resolveTab = self.makeResolveTab()
 
     '''
     Find the cached paths, and create paths.txt if it doesn't exist
@@ -54,6 +62,61 @@ class Tab(TabbedPanel):
                         self.status += "Success!\n"
                     else:
                         pass
+    '''
+    Create a new tab where a user can resolve incorrect file names. This function is used to set the 
+    resolveTab property so that we can use it downstream when checking file names.
+    '''
+    def makeResolveTab(self):
+        # Create the panel
+        tp = TabbedPanelItem()
+        tp.text = "Resolve Names"
+        self.add_widget(tp)
+
+        # Float layout
+        fl = FloatLayout()
+        tp.add_widget(fl)
+
+        filenameDropdown = DropDown()
+        variantDropdown = DropDown()
+        
+        # Set up main button
+        charButton = Button(text="Choose Character",size_hint =(None, None), pos =(150, 350))
+        charButton.bind(on_release = filenameDropdown.open)
+        
+        variantButton = Button(text="Choose Variant",size_hint=(None,None),pos = (500,350))
+        variantButton.bind(on_release=variantDropdown.open)
+        
+        variantDropdown.bind(on_select = lambda instance, x: setattr(variantButton, 'text', x)) # Set button to whatever is selected
+        filenameDropdown.bind(on_select = lambda instance, x: setattr(charButton, 'text', x)) # Set button to whatever is selected
+        
+        fl.add_widget(charButton)
+        fl.add_widget(variantButton)
+
+        # Read file contents and grab names of characters
+        with open("validFileNames.txt","r") as f:
+            lines = f.readlines()
+        names = [x[2:] for x in lines if "##" in x]
+
+        # Populate the filename dropdown with character names
+        for i in range(1,len(names)):
+            btn = Button(text=names[i],size_hint=(None,None), height = 40)
+            btn.bind(on_release=lambda btn: filenameDropdown.select(btn.text))
+            filenameDropdown.add_widget(btn)
+
+        # Populate the variant dropdown with color options
+        colors = ["normal","red","orange","blue","lavender","green","black"]
+        for i in range(1,len(colors)):
+            btn = Button(text=colors[i],size_hint=(None,None), height = 40)
+            btn.bind(on_release=lambda btn: variantDropdown.select(btn.text))
+            variantDropdown.add_widget(btn)
+
+        # Action button to perform the resolution
+        resolveButton = Button(text="Resolve files",size_hint=(None,None),pos=(200,200),height=40)
+        fl.add_widget(resolveButton)
+
+        # Return
+        return tp
+
     '''
     This function is used to ensure that the paths.txt file is in a 'good' state such that:
         - Each line has two parts: The identifier (e.g. 'Melee') and the path
@@ -162,7 +225,7 @@ class Tab(TabbedPanel):
         else:
             # Update status
             self.status += "Files selected for import:\n"
-            for f in self.files:
+            for f in self.files:                                              
                 self.fileList += f + "\n"
                 self.status += f + "\n"
     
@@ -214,7 +277,7 @@ class Tab(TabbedPanel):
             if texture[-3:] != "dat":
                 self.status += "File doesn't have .dat extension. Skipping this file.\n"
             if not self.isValidDatFile(texture):
-                self.resolveName(texture)
+                self.createPopup(texture)
             else:
                 # This is where the magic happens!
                 # Build call string and call gcr
@@ -283,11 +346,20 @@ class Tab(TabbedPanel):
             Drop-down for the variant (red,blue,normal,etc.)
         - Look up the                                  
     '''
-    def resolveName(self,textureName):
-        pass
+    def createPopup(self,textureName):
+        # Update the log
+        self.status += "This file " + textureName + " has a different name than is required by the Melee ISO. Popup deployed for file name resolution.\n"
+
+        # Create a notification popup 
+        popup = Popup(title="Resolve file name",size=(400,400))
+        dismissButton = Button(text="Press to dismiss message")
+        popup.add_widget(dismissButton)
+        dismissButton.bind(on_press=popup.dismiss)
+        popup.open()
+
 
     def isValidDatFile(self,textureName):
-        return True
+        return False # Setting to false for now to test popup behavior.
         
 class TextureImporter(App):
     def build(self):

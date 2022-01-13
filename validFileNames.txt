@@ -48,7 +48,7 @@ PlGnNr.dat
 PlGnRe.dat
 ##GameAndWatch
 PlGwNr.dat
-##Kirby <Comment>No absorb files for now</Comment>
+##Kirby
 PlKbBu.dat
 PlKbGr.dat
 PlKbNr.dat

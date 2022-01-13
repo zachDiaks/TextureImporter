@@ -1,11 +1,17 @@
+Handling naming stuff:
+    - Have a file with valid names
+    - If the DAT file being loaded doesn't match the filenames in validFileNames folder, specify a conflict and add a popup for resolving the conflict. 
+        - The popup will:
+            1) Display one of the problem files
+            2) Have the user specify a character and color that they want to replace
+            3) The DAT file will be renamed to the correct name via some sort of map. 
+            4) Iterate, starting with the next problem file. 
 Edge case: There's a subfolder. Need to traverse till you find the dat files
     - Also shouldn't try importing if no dat files were found
 Better indication that you pressed the import button
 Ability to export logs
 Mega upgrade:
     - Embed Melee textures in the app
-Handle incorrect naming
-    - What are all of the types of textures?
-    - I found a website for this!
+
 Implement setPaths using a map
 Readme and instructions
