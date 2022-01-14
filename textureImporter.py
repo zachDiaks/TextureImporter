@@ -1,5 +1,5 @@
 from kivy.app import App
-from kivy.core.text import Label
+from kivy.uix.label import Label
 from kivy.lang import Builder
 from kivy.uix.popup import Popup
 from kivy.uix.button import Button
@@ -28,12 +28,14 @@ class Tab(TabbedPanel):
     instructionsText = StringProperty()
     status = StringProperty()
     fileList = StringProperty()
+    badFile = StringProperty()
     
     def __init__(self, **kwargs):
         super(Tab, self).__init__(**kwargs)
         self.isoPath = "empty"
         self.gcrPath = "empty"
         self.filePath = "empty"
+        self.badFile = "empty"
         self.files = []
         self.status += "Logs:\n"
         self.getCachedPaths()
@@ -80,10 +82,11 @@ class Tab(TabbedPanel):
         variantDropdown = DropDown()
         
         # Set up main button
-        charButton = Button(text="Choose Character",size_hint =(None, None), pos =(150, 350))
+        bSize = (200,100)
+        charButton = Button(text="Choose Character",size_hint =(None, None), pos =(100,300),size=bSize)
         charButton.bind(on_release = filenameDropdown.open)
         
-        variantButton = Button(text="Choose Variant",size_hint=(None,None),pos = (500,350))
+        variantButton = Button(text="Choose Variant",size_hint=(None,None),pos = (450,300),size=bSize)
         variantButton.bind(on_release=variantDropdown.open)
         
         variantDropdown.bind(on_select = lambda instance, x: setattr(variantButton, 'text', x)) # Set button to whatever is selected
@@ -99,20 +102,24 @@ class Tab(TabbedPanel):
 
         # Populate the filename dropdown with character names
         for i in range(1,len(names)):
-            btn = Button(text=names[i],size_hint=(None,None), height = 40)
+            btn = Button(text=names[i],size_hint=(None,None), size=bSize)
             btn.bind(on_release=lambda btn: filenameDropdown.select(btn.text))
             filenameDropdown.add_widget(btn)
 
         # Populate the variant dropdown with color options
         colors = ["normal","red","orange","blue","lavender","green","black"]
         for i in range(1,len(colors)):
-            btn = Button(text=colors[i],size_hint=(None,None), height = 40)
+            btn = Button(text=colors[i],size_hint=(None,None), size=bSize)
             btn.bind(on_release=lambda btn: variantDropdown.select(btn.text))
             variantDropdown.add_widget(btn)
 
         # Action button to perform the resolution
-        resolveButton = Button(text="Resolve files",size_hint=(None,None),pos=(200,200),height=40)
+        resolveButton = Button(text="Resolve files",size_hint=(None,None),pos=(300,200),size=(150,70))
         fl.add_widget(resolveButton)
+
+        # Create label for file that needs changing
+        problematicLabel = Label(text="Problematic File: "+ self.badFile,pos=(-25,200))
+        fl.add_widget(problematicLabel)
 
         # Return
         return tp
@@ -357,6 +364,12 @@ class Tab(TabbedPanel):
         dismissButton.bind(on_press=popup.dismiss)
         popup.open()
 
+        # Update the resolve tab label with problematic file name
+        children = self.resolveTab.content.children
+        for child in children:
+            if type(child) is Label:
+                break
+        child.text = "Problematic texture: " + textureName
 
     def isValidDatFile(self,textureName):
         return False # Setting to false for now to test popup behavior.
