@@ -410,11 +410,9 @@ class Tab(TabbedPanel):
         # Set the handle to the bad label
         if self.BadLabel is None:
             self.setBadLabel()
-            
+
         # Update the label to display all bad files
-        for probFile in self.problemFiles:
-            probName = probFile.split("\\")[-1] # Grab just the file name
-            self.BadLabel.text += probName + "\n"
+        self.BadLabel.text += justName + "\n"
 
         # Add button
         btn = Button(text=justName,size_hint=(None,None),size=self.bSize)
@@ -435,17 +433,26 @@ class Tab(TabbedPanel):
     '''
     def handleResolveFiles(self,variantButton,badFileButton):
         # Create new full file name (including path) 
-        oldFileName = [x for x in self.problemFiles if badFileButton.text in x][0]
+        justName = badFileButton.text
+        oldFileName = [x for x in self.problemFiles if justName in x][0]
         newFileName = variantButton.text    
         fileparts = oldFileName.split("\\")
         fileparts[-1] = newFileName
         newFile = "\\".join(fileparts)
 
-        # Remove old file from problem files list, bad label list, and dropdown
+        # Remove from problem files list
         self.problemFiles.remove(oldFileName)
-
+        # Remove from BadLabel
+        splitLines = self.BadLabel.text.splitlines()
+        splitLines.remove(justName)
+        self.BadLabel.text = "\n".join(splitLines)
+        # Remove from dropdown
+        btns = self.badFileDropdown.children[0].children
+        btns = [x for x in btns if x.text not in justName]
+        self.badFileDropdown.children[0].children = btns 
+        self.badFileDropdown.select("Choose File to Resolve")
         # Call import
-        self.fileImporter(newFile)
+        #self.fileImporter(newFile)
 
     def isValidDatFile(self,textureName):
         return textureName in self.validNames
