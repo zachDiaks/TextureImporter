@@ -19,11 +19,14 @@ Readme and instructions
 ----------------------------
 pseudocode
 ----------------------------
-Populate left buttons
-When an item is chosen from the left, populate the right buttons given the current text on the left button
-
-# Variants
-for variant in mapping[key]:
-    btn = Button(text=colors[i],size_hint=(None,None), size=bSize)
-    btn.bind(on_release=lambda btn: variantDropdown.select(btn.text))
-    variantDropdown.add_widget(btn)
+Resolve callback:
+   Choose the file to resolve
+   Choose the item and variant
+   Hit resolve button
+        Use the button selections to change the file name
+        Remove name from list
+        Remove button from dropdown
+        Try importing 
+            Use the function I already have for the import attempt. It will throw you back to the loop if something goes wrong for some reason
+        
+    [x for x in self.problemFiles if oldFile in x]
