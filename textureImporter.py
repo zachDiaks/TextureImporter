@@ -98,21 +98,27 @@ class Tab(TabbedPanel):
         # Read file contents and grab names of characters
         with open("validFileNames.txt","r") as f:
             lines = f.readlines()
-        names = [x[2:] for x in lines if "##" in x]
+        
+        # Create a mapping from character/stage to variant
+        mapping = {}
+        variants = []
+        cItem = []
+        for line in lines:
+            if "##" in line:
+                if variants:
+                    mapping[cItem] = variants
+                cItem = line[2:-1]
+                variants = []
+            else:
+                variants.append(line)
+        mapping[cItem] = variants
 
-        # Populate the filename dropdown with character names
-        for i in range(1,len(names)):
-            btn = Button(text=names[i],size_hint=(None,None), size=bSize)
-            btn.bind(on_release=lambda btn: filenameDropdown.select(btn.text))
-            filenameDropdown.add_widget(btn)
-
-        # Populate the variant dropdown with color options
-        colors = ["normal","red","orange","blue","lavender","green","black"]
-        for i in range(1,len(colors)):
-            btn = Button(text=colors[i],size_hint=(None,None), size=bSize)
-            btn.bind(on_release=lambda btn: variantDropdown.select(btn.text))
-            variantDropdown.add_widget(btn)
-
+        # Populate the filename dropdown with the 
+        for key in mapping:
+            itemButton = Button(text=key,size_hint=(None,None),size=bSize)
+            itemButton.bind(on_release=lambda itemButton: self.handleItemSelect(itemButton,filenameDropdown,variantDropdown,mapping))
+            filenameDropdown.add_widget(itemButton)
+                
         # Action button to perform the resolution
         resolveButton = Button(text="Resolve files",size_hint=(None,None),pos=(300,200),size=(150,70))
         fl.add_widget(resolveButton)
@@ -123,6 +129,29 @@ class Tab(TabbedPanel):
 
         # Return
         return tp
+
+    '''
+    This function is the callback for when an item (character, stage, etc) is selected from the dropdown list
+    when resolving file names. On selection, we need to do a few things:
+        1) Update the item dropdown (left) with the item that was chosen
+        2) Remove any buttons that might exist from the dropdown. Also, reset the text on the main button
+        3) Based on what was chosen, fill the variantDropdown with the possible variants. 
+    '''
+    def handleItemSelect(self,itemButton,filenameDropdown,variantDropdown,mapping):
+        # Setup
+        bSize = (200,100)
+        selectedText = itemButton.text
+        # Step 1
+        filenameDropdown.select(selectedText)
+        # Step 2
+        variantDropdown.clear_widgets()
+        variantDropdown.select("Choose variant")
+        # Step 3
+        variants = mapping[selectedText]
+        for variant in variants:
+            btn = Button(text=variant,size_hint=(None,None), size=bSize)
+            btn.bind(on_release=lambda btn: variantDropdown.select(btn.text))
+            variantDropdown.add_widget(btn)
 
     '''
     This function is used to ensure that the paths.txt file is in a 'good' state such that:

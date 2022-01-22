@@ -15,3 +15,15 @@ Mega upgrade:
 
 Implement setPaths using a map
 Readme and instructions
+
+----------------------------
+pseudocode
+----------------------------
+Populate left buttons
+When an item is chosen from the left, populate the right buttons given the current text on the left button
+
+# Variants
+for variant in mapping[key]:
+    btn = Button(text=colors[i],size_hint=(None,None), size=bSize)
+    btn.bind(on_release=lambda btn: variantDropdown.select(btn.text))
+    variantDropdown.add_widget(btn)
