@@ -315,16 +315,21 @@ class Tab(TabbedPanel):
         if not os.path.isdir("backup"):
             os.mkdir("backup")
 
-        with zipper(fName,'r') as f:
-            self.status += "- Extracting files\n"
-            f.extractall("temp")
-        
-        # Parse through the extracted files and try importing into Melee ISO
-        # Back up the old files into a backup folder
-        textures = []
-        for (textPath,tmp,filenames) in os.walk("temp"):
-            textures.append([os.path.join(textPath,file) for file in filenames])
-        textures = [item for sublist in textures for item in sublist] # Flatten texture list and remove any empties
+        # Add logic to ONLY extract if the file name in question is a ZIP file this is needed
+        # because we use this function for file name resolution
+        if is_zipfile(fName):
+            with zipper(fName,'r') as f:
+                self.status += "- Extracting files\n"
+                f.extractall("temp")
+                # Parse through the extracted files and try importing into Melee ISO
+                # Back up the old files into a backup folder
+                textures = []
+                for (textPath,tmp,filenames) in os.walk("temp"):
+                    textures.append([os.path.join(textPath,file) for file in filenames])
+                textures = [item for sublist in textures for item in sublist] # Flatten texture list and remove any empties
+        # For resolve files
+        else:
+            textures = [fName]
         for texture in textures:
             # Validate the texture extension
             if texture[-3:] != "dat":
@@ -335,10 +340,20 @@ class Tab(TabbedPanel):
                 continue
             else:
                 # This is where the magic happens!
+                # Remove any backslashes to forward slashes
+                texture = texture.replace("\\","/")
+                # Get subdir under temp if ther is one
+                textureSubdir = self.getSubDir(texture)
+                # Rename the folder to remove spaces if needed
+                textureSubdir = self.fixDirWithSpace(textureSubdir)
+                # If there's pathing, get JUST the name of the texture file
+                justName = texture.split("/")[-1]
+
                 # Build call string and call gcr
-                nodePath = "root/" + texture
-                textureImportPath = "temp/" + texture
-                textureBackupPath = "backup/" + texture
+                base = os.getcwd().replace("\\","/")
+                nodePath = "root/" + justName
+                textureImportPath = base + "/temp/" + textureSubdir + "/" + justName
+                textureBackupPath = base + "/backup/" + justName
             
                 backupCallStr = "%s %s %s e %s"%(self.gcrPath,self.isoPath,
                     nodePath,textureBackupPath)
@@ -363,8 +378,6 @@ class Tab(TabbedPanel):
                     self.status += e.__str__() + "\n"
                     self.status += "- Unknown import error.\n"
                     returnVal = -1
-        # Remove temporary folder to avoid unnecessary imports
-        shutil.rmtree("temp")
         return returnVal
 
     '''
@@ -440,6 +453,8 @@ class Tab(TabbedPanel):
         fileparts[-1] = newFileName
         newFile = "\\".join(fileparts)
 
+        # Rename the bad file
+        os.rename(oldFileName,newFile)
         # Remove from problem files list
         self.problemFiles.remove(oldFileName)
         # Remove from BadLabel
@@ -452,14 +467,28 @@ class Tab(TabbedPanel):
         self.badFileDropdown.children[0].children = btns 
         self.badFileDropdown.select("Choose File to Resolve")
         # Call import
-        #self.fileImporter(newFile)
+        self.fileImporter(newFile)
 
     def isValidDatFile(self,textureName):
-        return textureName in self.validNames
+        justName = textureName.split("\\")[-1]
+        return justName in self.validNames
+    
+    '''Helper function to extract the subdirectory of a texture'''
+    def getSubDir(self,texture):
+        return "/".join(texture.split("/")[1:-1])
+
+    '''Helper function to remove spaces from subdir'''
+    def fixDirWithSpace(self,textureSubdir):
+        withoutSpace = textureSubdir.replace(" ","")
+        os.rename("temp/"+textureSubdir,"temp/"+withoutSpace)
+        return withoutSpace
         
 class TextureImporter(App):
     def build(self):
         return Tab()
+    def on_stop(self):
+        # Remove temporary folder on app exit
+        shutil.rmtree("temp")
 
 if __name__ == "__main__":
     TextureImporter().run()

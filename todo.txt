@@ -19,14 +19,6 @@ Readme and instructions
 ----------------------------
 pseudocode
 ----------------------------
-Resolve callback:
-   Choose the file to resolve
-   Choose the item and variant
-   Hit resolve button
-        Use the button selections to change the file name
-        Remove name from list
-        Remove button from dropdown
-        Try importing 
-            Use the function I already have for the import attempt. It will throw you back to the loop if something goes wrong for some reason
-        
-    [x for x in self.problemFiles if oldFile in x]
+Spaces in path is a problem...
+
+shutil.rmtree("temp")
