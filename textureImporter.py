@@ -28,23 +28,27 @@ class Tab(TabbedPanel):
     instructionsText = StringProperty()
     status = StringProperty()
     fileList = StringProperty()
-    badFile = StringProperty()
     
     def __init__(self, **kwargs):
         super(Tab, self).__init__(**kwargs)
         self.isoPath = "empty"
         self.gcrPath = "empty"
         self.filePath = "empty"
-        self.badFile = "empty"
+        self.badFileDropdown = None
+        self.BadLabel = None
+        self.bSize = (200,100)
         self.files = []
-        self.status += "Logs:\n"
+        self.status += "- Logs:\n"
         self.getCachedPaths()
         self.instructionsText = "Instructions coming!"
         self.isValidISO = False
         self.isValidgcr = False
         self.firstTime = True
         self.thisPath = os.getcwd()
+        self.validNames = self.getValidNames()
         self.resolveTab = self.makeResolveTab()
+        self.problemFiles = []
+        
 
     '''
     Find the cached paths, and create paths.txt if it doesn't exist
@@ -55,15 +59,23 @@ class Tab(TabbedPanel):
             with open("paths.txt","r") as f:
                 for line in f:
                     if line.startswith("Melee"):
-                        self.status += "Getting cached Melee ISO... "
+                        self.status += "- Getting cached Melee ISO... "
                         self.isoPath = line.split(" ")[1]
-                        self.status += "Success!\n"
+                        self.status += "- Success!\n"
                     elif line.startswith("gcr"):
-                        self.status += "Getting cached gcr.exe..."
+                        self.status += "- Getting cached gcr.exe..."
                         self.gcrPath = line.split(" ")[1]
-                        self.status += "Success!\n"
+                        self.status += "- Success!\n"
                     else:
                         pass
+    '''
+    Grab all valid texture names
+    '''                
+    def getValidNames(self):
+        with open("validFileNames.txt","r") as f:
+            lines = f.readlines()
+        return [line[:-1] for line in lines] # Remove escape chars
+        
     '''
     Create a new tab where a user can resolve incorrect file names. This function is used to set the 
     resolveTab property so that we can use it downstream when checking file names.
@@ -80,49 +92,80 @@ class Tab(TabbedPanel):
 
         filenameDropdown = DropDown()
         variantDropdown = DropDown()
+        badFileDropdown = DropDown()
+
+        # Set up main buttons
+        badFileButton = Button(text="Choose File to Resolve",size_hint =(None, None), pos =(275,325),size=self.bSize)
+        badFileButton.bind(on_release = badFileDropdown.open)
         
-        # Set up main button
-        bSize = (200,100)
-        charButton = Button(text="Choose Character",size_hint =(None, None), pos =(100,300),size=bSize)
+        charButton = Button(text="Choose Character",size_hint =(None, None), pos =(100,200),size=self.bSize)
         charButton.bind(on_release = filenameDropdown.open)
         
-        variantButton = Button(text="Choose Variant",size_hint=(None,None),pos = (450,300),size=bSize)
+        variantButton = Button(text="Choose Variant",size_hint=(None,None),pos = (450,200),size=self.bSize)
         variantButton.bind(on_release=variantDropdown.open)
         
         variantDropdown.bind(on_select = lambda instance, x: setattr(variantButton, 'text', x)) # Set button to whatever is selected
         filenameDropdown.bind(on_select = lambda instance, x: setattr(charButton, 'text', x)) # Set button to whatever is selected
+        badFileDropdown.bind(on_select = lambda instance, x: setattr(badFileButton, 'text', x)) # Same as above
+        self.badFileDropdown = badFileDropdown # TODO: cleaner way to wire this up?
         
         fl.add_widget(charButton)
         fl.add_widget(variantButton)
+        fl.add_widget(badFileButton)
 
-        # Read file contents and grab names of characters
-        with open("validFileNames.txt","r") as f:
-            lines = f.readlines()
-        names = [x[2:] for x in lines if "##" in x]
+        # Create a mapping from character/stage to variant
+        mapping = {}
+        variants = []
+        cItem = []
+        for line in self.validNames:
+            if "##" in line:
+                if variants:
+                    mapping[cItem] = variants
+                cItem = line[2:]
+                variants = []
+            else:
+                variants.append(line)
+        mapping[cItem] = variants
 
-        # Populate the filename dropdown with character names
-        for i in range(1,len(names)):
-            btn = Button(text=names[i],size_hint=(None,None), size=bSize)
-            btn.bind(on_release=lambda btn: filenameDropdown.select(btn.text))
-            filenameDropdown.add_widget(btn)
-
-        # Populate the variant dropdown with color options
-        colors = ["normal","red","orange","blue","lavender","green","black"]
-        for i in range(1,len(colors)):
-            btn = Button(text=colors[i],size_hint=(None,None), size=bSize)
-            btn.bind(on_release=lambda btn: variantDropdown.select(btn.text))
-            variantDropdown.add_widget(btn)
-
+        # Populate the filename dropdown with the mapping
+        for key in mapping:
+            itemButton = Button(text=key,size_hint=(None,None),size=self.bSize)
+            itemButton.bind(on_release=lambda itemButton: self.handleItemSelect(itemButton,filenameDropdown,variantDropdown,mapping))
+            filenameDropdown.add_widget(itemButton)
+                
         # Action button to perform the resolution
-        resolveButton = Button(text="Resolve files",size_hint=(None,None),pos=(300,200),size=(150,70))
+        resolveButton = Button(text="Resolve files",size_hint=(None,None),pos=(300,100),size=(150,70))
+        resolveButton.bind(on_release=lambda resolveButton: self.handleResolveFiles(variantButton,badFileButton))
         fl.add_widget(resolveButton)
 
         # Create label for file that needs changing
-        problematicLabel = Label(text="Problematic File: "+ self.badFile,pos=(-25,200))
+        problematicLabel = Label(text="Problematic files: \n",pos=(-25,200))
         fl.add_widget(problematicLabel)
 
         # Return
         return tp
+
+    '''
+    This function is the callback for when an item (character, stage, etc) is selected from the dropdown list
+    when resolving file names. On selection, we need to do a few things:
+        1) Update the item dropdown (left) with the item that was chosen
+        2) Remove any buttons that might exist from the dropdown. Also, reset the text on the main button
+        3) Based on what was chosen, fill the variantDropdown with the possible variants. 
+    '''
+    def handleItemSelect(self,itemButton,filenameDropdown,variantDropdown,mapping):
+        # Setup
+        selectedText = itemButton.text
+        # Step 1
+        filenameDropdown.select(selectedText)
+        # Step 2
+        variantDropdown.clear_widgets()
+        variantDropdown.select("Choose variant")
+        # Step 3
+        variants = mapping[selectedText]
+        for variant in variants:
+            btn = Button(text=variant,size_hint=(None,None), size=self.bSize)
+            btn.bind(on_release=lambda btn: variantDropdown.select(btn.text))
+            variantDropdown.add_widget(btn)
 
     '''
     This function is used to ensure that the paths.txt file is in a 'good' state such that:
@@ -143,7 +186,7 @@ class Tab(TabbedPanel):
             # It's okay if there's no lines in the file. The user will have to specify the paths again. Do nothing here.
             pass
         if clearFile:
-            self.status += "There was an issue fetching the cached files. Clearing the cache now (paths.txt should be empty)\n"
+            self.status += "- There was an issue fetching the cached files. Clearing the cache now (paths.txt should be empty)\n"
             with open("paths.txt","w") as f:
                 f.writelines([])
     '''
@@ -167,7 +210,7 @@ class Tab(TabbedPanel):
         if (potentialPath.split("/")[-1][-4:] == "." + extension):
 
             # Cache file location
-            self.status += "Caching " + fileType + " to paths.txt\n"
+            self.status += "- Caching " + fileType + " to paths.txt\n"
             newLines = []
 
             # I started a comment but forgot what this is supposed to be
@@ -209,7 +252,7 @@ class Tab(TabbedPanel):
         # Handle no file chosen                    
         elif potentialPath == "":
             # Do nothing because file was not actually selected
-            self.status += "No file was selected\n"
+            self.status += "- No file was selected\n"
 
         # Tell the user no file has been chosen
         else:
@@ -228,10 +271,10 @@ class Tab(TabbedPanel):
         
         # Let the user know that no files were chosen
         if len(self.files) == 0:
-            self.status += "No files were selected for import\n"
+            self.status += "- No files were selected for import\n"
         else:
             # Update status
-            self.status += "Files selected for import:\n"
+            self.status += "- Files selected for import:\n"
             for f in self.files:                                              
                 self.fileList += f + "\n"
                 self.status += f + "\n"
@@ -241,7 +284,7 @@ class Tab(TabbedPanel):
     '''
     def importFiles(self):
         if len(self.files) == 0:
-            self.status += "No files were selected for import. Ignoring button press.\n"
+            self.status += "- No files were selected for import. Ignoring button press.\n"
         
         # Only begin the import process if the user selected ZIP files
         for f in self.files:
@@ -251,9 +294,9 @@ class Tab(TabbedPanel):
                 # Import the textures from this ZIP file
                 importStatus = self.fileImporter(f)
                 if importStatus == 0:
-                    self.status += "Imported textures from " + f + "\n"
+                    self.status += "- Imported textures from " + f + "\n"
                 else:
-                    self.status += "Import error. See above log.\n"
+                    self.status += "- Import error. See above log.\n"
     
     '''
     Helper function for importFiles. This does most of the work.
@@ -265,32 +308,52 @@ class Tab(TabbedPanel):
         returnVal = 0
         # Create a temporary folder to extract files
         if not os.path.isdir("temp"):
-            self.status += "making temp folder \n"
+            self.status += "- making temp folder \n"
             os.mkdir("temp")
         
         # Create a backup folder for the textures you're replacing
         if not os.path.isdir("backup"):
             os.mkdir("backup")
 
-        with zipper(fName,'r') as f:
-            self.status += "Extracting files\n"
-            f.extractall("temp")
-        
-        # Parse through the extracted files and try importing into Melee ISO
-        # Back up the old files into a backup folder
-        textures = os.listdir("temp")
+        # Add logic to ONLY extract if the file name in question is a ZIP file this is needed
+        # because we use this function for file name resolution
+        if is_zipfile(fName):
+            with zipper(fName,'r') as f:
+                self.status += "- Extracting files\n"
+                f.extractall("temp")
+                # Parse through the extracted files and try importing into Melee ISO
+                # Back up the old files into a backup folder
+                textures = []
+                for (textPath,tmp,filenames) in os.walk("temp"):
+                    textures.append([os.path.join(textPath,file) for file in filenames])
+                textures = [item for sublist in textures for item in sublist] # Flatten texture list and remove any empties
+        # For resolve files
+        else:
+            textures = [fName]
         for texture in textures:
             # Validate the texture extension
             if texture[-3:] != "dat":
-                self.status += "File doesn't have .dat extension. Skipping this file.\n"
+                self.status += "- File doesn't have .dat extension. Skipping this file.\n"
+                continue
             if not self.isValidDatFile(texture):
                 self.createPopup(texture)
+                continue
             else:
                 # This is where the magic happens!
+                # Remove any backslashes to forward slashes
+                texture = texture.replace("\\","/")
+                # Get subdir under temp if ther is one
+                textureSubdir = self.getSubDir(texture)
+                # Rename the folder to remove spaces if needed
+                textureSubdir = self.fixDirWithSpace(textureSubdir)
+                # If there's pathing, get JUST the name of the texture file
+                justName = texture.split("/")[-1]
+
                 # Build call string and call gcr
-                nodePath = "root/" + texture
-                textureImportPath = "temp/" + texture
-                textureBackupPath = "backup/" + texture
+                base = os.getcwd().replace("\\","/")
+                nodePath = "root/" + justName
+                textureImportPath = base + "/temp/" + textureSubdir + "/" + justName
+                textureBackupPath = base + "/backup/" + justName
             
                 backupCallStr = "%s %s %s e %s"%(self.gcrPath,self.isoPath,
                     nodePath,textureBackupPath)
@@ -304,19 +367,17 @@ class Tab(TabbedPanel):
                 importCallStr = "".join(importFix)
 
                 try:
-                    self.status += "Trying to import texture... \n"
+                    self.status += "- Trying to import texture... \n"
                     subprocess.call(backupCallStr,shell=False)
                     subprocess.call(importCallStr,shell=False)
-                    self.status += "Import success! \n"
-                    self.status += "Backing up old textures to ZIP file...\n"
+                    self.status += "- Import success! \n"
+                    self.status += "- Backing up old textures to ZIP file...\n"
                     self.zipBackupFiles()
-                    self.status += "Backup success!\n"
+                    self.status += "- Backup success!\n"
                 except Exception as e:
                     self.status += e.__str__() + "\n"
-                    self.status += "Unknown import error.\n"
+                    self.status += "- Unknown import error.\n"
                     returnVal = -1
-        # Remove temporary folder to avoid unnecessary imports
-        shutil.rmtree("temp")
         return returnVal
 
     '''
@@ -340,43 +401,94 @@ class Tab(TabbedPanel):
     Example:
         - User downloads textures.ZIP which contains:
             - PlFxNr.dat --> This is the expected name for the default Fox texture. 
-            - MySickRedFox.dat --> This name doesn't match the corresponding Melee ISO name for Red Fox. It needs to br 
-                                   re-named to PlFxOr.dat 
-    Implementation:
-        - Open a new UI that's layed out as:
-            Prompt to explain what's going on with the original file name
-            Drop-down to identify what texture type they're trying to change...
-                - Stage?
-                - Character? 
-                - Something else? Not sure what other textures there are...
-            Drop-down for the character/stage
-            Drop-down for the variant (red,blue,normal,etc.)
-        - Look up the                                  
+            - MySickRedFox.dat --> This name doesn't match the corresponding Melee ISO name for Red Fox. It needs to be 
+                                   re-named to PlFxOr.dat                                  
     '''
     def createPopup(self,textureName):
+        # Just get the name of the file
+        justName = textureName.split("\\")[-1]
         # Update the log
-        self.status += "This file " + textureName + " has a different name than is required by the Melee ISO. Popup deployed for file name resolution.\n"
+        self.status += "- This file " + justName + " has a different name than is required by the Melee ISO. Popup deployed for file name resolution.\n"
+
+        # Update the list of problem files to be resolved
+        self.problemFiles.append(textureName)
 
         # Create a notification popup 
-        popup = Popup(title="Resolve file name",size=(400,400))
-        dismissButton = Button(text="Press to dismiss message")
+        popup = Popup(title="Resolve file name " + justName,size=(400,400))
+        dismissButton = Button(text="Please go to the Resolve Tab to change the file names. Press to dismiss message")
         popup.add_widget(dismissButton)
         dismissButton.bind(on_press=popup.dismiss)
         popup.open()
+    
+        # Set the handle to the bad label
+        if self.BadLabel is None:
+            self.setBadLabel()
 
+        # Update the label to display all bad files
+        self.BadLabel.text += justName + "\n"
+
+        # Add button
+        btn = Button(text=justName,size_hint=(None,None),size=self.bSize)
+        btn.bind(on_release=lambda btn: self.badFileDropdown.select(btn.text))
+        self.badFileDropdown.add_widget(btn)
+
+    '''
+    Helper function: Grab a handle to the bad label
+    '''
+    def setBadLabel(self):
         # Update the resolve tab label with problematic file name
         children = self.resolveTab.content.children
         for child in children:
             if type(child) is Label:
-                break
-        child.text = "Problematic texture: " + textureName
+                self.BadLabel = child
+    '''
+    Callback function to handle file name resolution in the Resolve Tab. 
+    '''
+    def handleResolveFiles(self,variantButton,badFileButton):
+        # Create new full file name (including path) 
+        justName = badFileButton.text
+        oldFileName = [x for x in self.problemFiles if justName in x][0]
+        newFileName = variantButton.text    
+        fileparts = oldFileName.split("\\")
+        fileparts[-1] = newFileName
+        newFile = "\\".join(fileparts)
+
+        # Rename the bad file
+        os.rename(oldFileName,newFile)
+        # Remove from problem files list
+        self.problemFiles.remove(oldFileName)
+        # Remove from BadLabel
+        splitLines = self.BadLabel.text.splitlines()
+        splitLines.remove(justName)
+        self.BadLabel.text = "\n".join(splitLines)
+        # Remove from dropdown
+        btns = self.badFileDropdown.children[0].children
+        btns = [x for x in btns if x.text not in justName]
+        self.badFileDropdown.children[0].children = btns 
+        self.badFileDropdown.select("Choose File to Resolve")
+        # Call import
+        self.fileImporter(newFile)
 
     def isValidDatFile(self,textureName):
-        return False # Setting to false for now to test popup behavior.
+        justName = textureName.split("\\")[-1]
+        return justName in self.validNames
+    
+    '''Helper function to extract the subdirectory of a texture'''
+    def getSubDir(self,texture):
+        return "/".join(texture.split("/")[1:-1])
+
+    '''Helper function to remove spaces from subdir'''
+    def fixDirWithSpace(self,textureSubdir):
+        withoutSpace = textureSubdir.replace(" ","")
+        os.rename("temp/"+textureSubdir,"temp/"+withoutSpace)
+        return withoutSpace
         
 class TextureImporter(App):
     def build(self):
         return Tab()
+    def on_stop(self):
+        # Remove temporary folder on app exit
+        shutil.rmtree("temp")
 
 if __name__ == "__main__":
     TextureImporter().run()

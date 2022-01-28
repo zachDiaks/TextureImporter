@@ -8,6 +8,7 @@ Mega upgrade:
 Implement setPaths using a map
 Readme and instructions
 
+<<<<<<< HEAD
 -------------------------------
 key = ""
 valList = []
@@ -22,3 +23,11 @@ for item in list:
 
 
     
+=======
+----------------------------
+pseudocode
+----------------------------
+Spaces in path is a problem...
+
+shutil.rmtree("temp")
+>>>>>>> 6fc1f4124f668d3a44f653a927b1d36d5ec4096d
