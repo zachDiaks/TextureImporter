@@ -1,12 +1,8 @@
-Edge case: There's a subfolder. Need to traverse till you find the dat files
-    - Also shouldn't try importing if no dat files were found
-Better indication that you pressed the import button
-Ability to export logs
-Mega upgrade:
-    - Embed Melee textures in the app
-
-Implement setPaths using a map
-Readme and instructions
+To Do:
+    - Add more descriptive names
+    - Unit tests
+    - Ability to export logs
+    - Readme and instructions
 
 --------------------------------
 Testing

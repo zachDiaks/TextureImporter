@@ -318,15 +318,7 @@ class Tab(TabbedPanel):
         # Add logic to ONLY extract if the file name in question is a ZIP file this is needed
         # because we use this function for file name resolution
         if is_zipfile(fName):
-            with zipper(fName,'r') as f:
-                self.status += "- Extracting files\n"
-                f.extractall("temp")
-                # Parse through the extracted files and try importing into Melee ISO
-                # Back up the old files into a backup folder
-                textures = []
-                for (textPath,tmp,filenames) in os.walk("temp"):
-                    textures.append([os.path.join(textPath,file) for file in filenames])
-                textures = [item for sublist in textures for item in sublist] # Flatten texture list and remove any empties
+            textures = self.extractTextures(fName)
         # For resolve files
         else:
             textures = [fName]
@@ -340,26 +332,12 @@ class Tab(TabbedPanel):
                 continue
             else:
                 # This is where the magic happens!
-                # Remove any backslashes to forward slashes
-                texture = texture.replace("\\","/")
-                # Get subdir under temp if ther is one
-                textureSubdir = self.getSubDir(texture)
-                # Rename the folder to remove spaces if needed
-                textureSubdir = self.fixDirWithSpace(textureSubdir)
-                # If there's pathing, get JUST the name of the texture file
-                justName = texture.split("/")[-1]
-
-                # Build call string and call gcr
-                base = os.getcwd().replace("\\","/")
-                nodePath = "root/" + justName
-                textureImportPath = base + "/temp/" + textureSubdir + "/" + justName
-                textureBackupPath = base + "/backup/" + justName
-            
-                backupCallStr = "%s %s %s e %s"%(self.gcrPath,self.isoPath,
-                    nodePath,textureBackupPath)
-                importCallStr = "%s %s %s i %s"%(self.gcrPath,self.isoPath,
-                    nodePath,textureImportPath)
-
+                
+                # Build call strings
+                callStrs = self.buildCallStrings(texture)
+                backupCallStr = callStrs(0)
+                importCallStr = callStrs(1)
+               
                 # Remove any newline chars
                 backupFix = backupCallStr.split("\n") 
                 backupCallStr = "".join(backupFix)
@@ -379,6 +357,48 @@ class Tab(TabbedPanel):
                     self.status += "- Unknown import error.\n"
                     returnVal = -1
         return returnVal
+
+    '''
+    Helper function to extract all files from specified zip file and grab textures
+    '''
+    def extractTextures(self,fName):
+         with zipper(fName,'r') as f:
+            self.status += "- Extracting files\n"
+            f.extractall("temp")
+            # Parse through the extracted files and try importing into Melee ISO
+            # Back up the old files into a backup folder
+            textures = []
+            for (textPath,tmp,filenames) in os.walk("temp"):
+                textures.append([os.path.join(textPath,file) for file in filenames])
+            textures = [item for sublist in textures for item in sublist] # Flatten texture list and remove any empties
+            return textures
+
+    '''
+    Helper function to build the import and backup call strings
+    '''
+    def buildCallStrings(self,texture):
+        # Remove any backslashes to forward slashes
+        texture = texture.replace("\\","/")
+        # Get subdir under temp if ther is one
+        textureSubdir = self.getSubDir(texture)
+        # Rename the folder to remove spaces if needed
+        textureSubdir = self.fixDirWithSpace(textureSubdir)
+        # If there's pathing, get JUST the name of the texture file
+        justName = texture.split("/")[-1]
+
+        # Build call string and call gcr
+        base = os.getcwd().replace("\\","/")
+        nodePath = "root/" + justName
+        textureImportPath = base + "/temp/" + textureSubdir + "/" + justName
+        textureBackupPath = base + "/backup/" + justName
+    
+        backupCallStr = "%s %s %s e %s"%(self.gcrPath,self.isoPath,
+            nodePath,textureBackupPath)
+        importCallStr = "%s %s %s i %s"%(self.gcrPath,self.isoPath,
+            nodePath,textureImportPath)
+
+        return (backupCallStr,importCallStr)
+
 
     '''
     Helper function to throw all of the backed up files into a ZIP folder that can be re-imported at a later date. 
