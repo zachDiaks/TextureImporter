@@ -146,8 +146,4 @@ PlYsYe.dat
 PlZdBu.dat
 PlZdGr.dat
 PlZdNr.dat
-<<<<<<< HEAD
 PlZdReWh.dat
-=======
-PlZdReWh.dat
->>>>>>> 6fc1f4124f668d3a44f653a927b1d36d5ec4096d

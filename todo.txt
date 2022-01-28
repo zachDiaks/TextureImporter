@@ -8,26 +8,7 @@ Mega upgrade:
 Implement setPaths using a map
 Readme and instructions
 
-<<<<<<< HEAD
--------------------------------
-key = ""
-valList = []
-for item in list:
-    if "##" in item:
-        if key == "":
-            key = item # This should only be at the beginning of the file
-        else:
-            key ==        
-    else:
-        valList.append(item)
-
-
-    
-=======
-----------------------------
-pseudocode
-----------------------------
-Spaces in path is a problem...
-
-shutil.rmtree("temp")
->>>>>>> 6fc1f4124f668d3a44f653a927b1d36d5ec4096d
+--------------------------------
+Testing
+--------------------------------
+- Should move some functionality to different methods so that it's easier to test

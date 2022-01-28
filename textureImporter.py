@@ -491,4 +491,5 @@ class TextureImporter(App):
         shutil.rmtree("temp")
 
 if __name__ == "__main__":
-    TextureImporter().run()
+    pass
+    #TextureImporter().run()
