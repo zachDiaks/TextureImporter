@@ -48,6 +48,10 @@ class TextureImporterTester(unittest.TestCase):
     def testNestingWithSpaces(self):
         self.app.files = "Tests/TestNesting_Spaces.zip"
 
+    # Test the result of texture extraction
+    def testExtractTextures(self):
+        pass
+
     '''
     --------------------------
      Helper functions 

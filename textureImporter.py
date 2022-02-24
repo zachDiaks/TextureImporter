@@ -159,7 +159,7 @@ class Tab(TabbedPanel):
         filenameDropdown.select(selectedText)
         # Step 2
         variantDropdown.clear_widgets()
-        variantDropdown.select("Choose variant")
+        variantDropdown.select("Choose Variant")
         # Step 3
         variants = mapping[selectedText]
         for variant in variants:
@@ -335,8 +335,8 @@ class Tab(TabbedPanel):
                 
                 # Build call strings
                 callStrs = self.buildCallStrings(texture)
-                backupCallStr = callStrs(0)
-                importCallStr = callStrs(1)
+                backupCallStr = callStrs[0]
+                importCallStr = callStrs[1]
                
                 # Remove any newline chars
                 backupFix = backupCallStr.split("\n") 
@@ -465,6 +465,14 @@ class Tab(TabbedPanel):
     Callback function to handle file name resolution in the Resolve Tab. 
     '''
     def handleResolveFiles(self,variantButton,badFileButton):
+        # If no resolve file is selected, return
+        if badFileButton.text == 'Choose File to Resolve':
+            self.status += "- No file chosen to resolve, skipping for now\n"
+            return
+        # If no variant is chosen, return
+        if variantButton.text == 'Choose Variant':
+            self.status += "- No variant chosen for resolving, skipping for now\n"
+            return
         # Create new full file name (including path) 
         justName = badFileButton.text
         oldFileName = [x for x in self.problemFiles if justName in x][0]
@@ -474,7 +482,7 @@ class Tab(TabbedPanel):
         newFile = "\\".join(fileparts)
 
         # Rename the bad file
-        os.rename(oldFileName,newFile)
+        os.replace(oldFileName,newFile)
         # Remove from problem files list
         self.problemFiles.remove(oldFileName)
         # Remove from BadLabel
@@ -500,7 +508,7 @@ class Tab(TabbedPanel):
     '''Helper function to remove spaces from subdir'''
     def fixDirWithSpace(self,textureSubdir):
         withoutSpace = textureSubdir.replace(" ","")
-        os.rename("temp/"+textureSubdir,"temp/"+withoutSpace)
+        os.replace("temp/"+textureSubdir,"temp/"+withoutSpace)
         return withoutSpace
         
 class TextureImporter(App):
@@ -511,5 +519,4 @@ class TextureImporter(App):
         shutil.rmtree("temp")
 
 if __name__ == "__main__":
-    pass
-    #TextureImporter().run()
+    TextureImporter().run()
