@@ -488,7 +488,7 @@ class Tab(TabbedPanel):
         # Remove from BadLabel
         splitLines = self.BadLabel.text.splitlines()
         splitLines.remove(justName)
-        self.BadLabel.text = "\n".join(splitLines)
+        self.BadLabel.text = "".join(splitLines) + "\n" 
         # Remove from dropdown
         btns = self.badFileDropdown.children[0].children
         btns = [x for x in btns if x.text not in justName]
